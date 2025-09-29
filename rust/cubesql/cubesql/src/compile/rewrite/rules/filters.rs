@@ -1773,26 +1773,51 @@ impl RewriteRules for FilterRules {
                     "?filter_aliases",
                 ),
             ),
-            // When the filter set above is paired with other filters, it needs to be
-            // regrouped for the above rewrite rule to match
+            // The filter set above may be inverted, let's account for that as well
             rewrite(
-                "extract-trunc-year-and-month-equals-regroup-binary",
+                "extract-trunc-year-and-month-equals-reverse",
                 filter_replacer(
                     binary_expr(
                         binary_expr(
-                            "?expr",
-                            "AND",
-                            binary_expr(
-                                self.fun_expr(
-                                    "Trunc",
-                                    vec![self.fun_expr(
-                                        "DatePart",
-                                        vec![literal_string("month"), column_expr("?column")],
-                                    )],
-                                ),
-                                "=",
-                                literal_expr("?month"),
+                            self.fun_expr(
+                                "Trunc",
+                                vec![self.fun_expr(
+                                    "DatePart",
+                                    vec![literal_string("year"), column_expr("?column")],
+                                )],
                             ),
+                            "=",
+                            literal_expr("?year"),
+                        ),
+                        "AND",
+                        binary_expr(
+                            self.fun_expr(
+                                "Trunc",
+                                vec![self.fun_expr(
+                                    "DatePart",
+                                    vec![literal_string("month"), column_expr("?column")],
+                                )],
+                            ),
+                            "=",
+                            literal_expr("?month"),
+                        ),
+                    ),
+                    "?alias_to_cube",
+                    "?members",
+                    "?filter_aliases",
+                ),
+                filter_replacer(
+                    binary_expr(
+                        binary_expr(
+                            self.fun_expr(
+                                "Trunc",
+                                vec![self.fun_expr(
+                                    "DatePart",
+                                    vec![literal_string("month"), column_expr("?column")],
+                                )],
+                            ),
+                            "=",
+                            literal_expr("?month"),
                         ),
                         "AND",
                         binary_expr(
@@ -1811,6 +1836,45 @@ impl RewriteRules for FilterRules {
                     "?members",
                     "?filter_aliases",
                 ),
+            ),
+            // When the filter set above is paired with other filters, it needs to be
+            // regrouped for the above rewrite rule to match
+            rewrite(
+                "extract-trunc-year-and-month-equals-regroup-binary",
+                filter_replacer(
+                    binary_expr(
+                        binary_expr(
+                            "?expr",
+                            "AND",
+                            binary_expr(
+                                self.fun_expr(
+                                    "Trunc",
+                                    vec![self.fun_expr(
+                                        "DatePart",
+                                        vec![literal_expr("?gran1"), column_expr("?column")],
+                                    )],
+                                ),
+                                "=",
+                                literal_expr("?val1"),
+                            ),
+                        ),
+                        "AND",
+                        binary_expr(
+                            self.fun_expr(
+                                "Trunc",
+                                vec![self.fun_expr(
+                                    "DatePart",
+                                    vec![literal_expr("?gran2"), column_expr("?column")],
+                                )],
+                            ),
+                            "=",
+                            literal_expr("?val2"),
+                        ),
+                    ),
+                    "?alias_to_cube",
+                    "?members",
+                    "?filter_aliases",
+                ),
                 filter_replacer(
                     binary_expr(
                         "?expr",
@@ -1821,11 +1885,11 @@ impl RewriteRules for FilterRules {
                                     "Trunc",
                                     vec![self.fun_expr(
                                         "DatePart",
-                                        vec![literal_string("month"), column_expr("?column")],
+                                        vec![literal_expr("?gran1"), column_expr("?column")],
                                     )],
                                 ),
                                 "=",
-                                literal_expr("?month"),
+                                literal_expr("?val1"),
                             ),
                             "AND",
                             binary_expr(
@@ -1833,11 +1897,11 @@ impl RewriteRules for FilterRules {
                                     "Trunc",
                                     vec![self.fun_expr(
                                         "DatePart",
-                                        vec![literal_string("year"), column_expr("?column")],
+                                        vec![literal_expr("?gran2"), column_expr("?column")],
                                     )],
                                 ),
                                 "=",
-                                literal_expr("?year"),
+                                literal_expr("?val2"),
                             ),
                         ),
                     ),
